@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.cache/
+.local/
+.npm/
+.claude/
+.claude.json
+.claude.json.backup
+*.log
+.DS_Store
+.env
+
+# Docker data directory (persisted config)
+data/*
+!data/.gitkeep

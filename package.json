@@ -1,0 +1,17 @@
+{
+  "name": "pi-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js & vite --host",
+    "server": "node server/index.js",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "systeminformation": "^5.30.5"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}

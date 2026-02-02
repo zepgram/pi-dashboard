@@ -1,0 +1,57 @@
+services:
+  pi-dashboard:
+    # Pre-built image from Docker Hub (recommended)
+    image: usernamedigital/pi-dashboard:latest
+    # Or build locally from source:
+    # build: .
+    container_name: pi-dashboard
+    restart: unless-stopped
+
+    # ===================================
+    # Configuration
+    # ===================================
+    environment:
+      # Server port
+      - PORT=3001
+
+      # Settings file path (inside container)
+      - SETTINGS_CONFIG=/app/data/settings.json
+
+      # Admin token for protected endpoints (service config)
+      # Leave empty to disable auth (dev mode)
+      # Generate one: openssl rand -hex 16
+      - ADMIN_TOKEN=
+
+      # CORS allowed origins (comma-separated)
+      # "*" = allow all (ok for local network)
+      - CORS_ORIGINS=*
+
+    volumes:
+      # Persistent settings (dashboard config, services, API keys)
+      - ./data:/app/data
+
+      # System monitoring (required)
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+
+      # Docker container monitoring (required for container stats)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # WireGuard config (for client names mapping)
+      - /etc/wireguard:/etc/wireguard:ro
+
+    # Host namespaces for full system access
+    pid: host
+    network_mode: host
+
+    # Capabilities for WireGuard monitoring
+    cap_add:
+      - NET_ADMIN
+
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

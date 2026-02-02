@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+._*
+.cache
+.local
+.npm
+.claude
+.claude.json
+.claude.json.backup
+*.log
+ITERATION_LOG.md
+INSTRUCTION.md

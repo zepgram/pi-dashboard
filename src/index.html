@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pi Dashboard</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="Real-time Raspberry Pi system monitoring dashboard">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pi Dashboard">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Favicon (inline SVG as data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M70 50h-12l-9 27-18-54-9 27h-12' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M70 50h-12l-9 27-18-54-9 27h-12' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Smoothie Charts for real-time streaming graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/smoothie@1.36.1/smoothie.min.js"></script>
+
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="background-glow"></div>
+
+  <!-- SVG Icon Sprite (hidden, referenced via <use>) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <!-- Toast Icons -->
+    <symbol id="icon-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <!-- Service Icons -->
+    <symbol id="icon-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+    <symbol id="icon-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+    <symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+    <symbol id="icon-hard-drive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></symbol>
+    <!-- Sysinfo panel icons -->
+    <symbol id="icon-sysinfo-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></symbol>
+    <symbol id="icon-sysinfo-mem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/></symbol>
+    <symbol id="icon-sysinfo-sys" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></symbol>
+    <symbol id="icon-sysinfo-os" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+    <!-- Network/UI icons -->
+    <symbol id="icon-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></symbol>
+    <symbol id="icon-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="icon-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 14 12 9 7 14"/><line x1="12" y1="9" x2="12" y2="21"/></symbol>
+    <symbol id="icon-no-connection" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  </svg>
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" id="welcome-banner">
+    <div class="welcome-content">
+      <div class="welcome-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <div class="welcome-text">
+        <h3>Welcome to Pi Dashboard</h3>
+        <p>Press <kbd>?</kbd> for keyboard shortcuts or <kbd>S</kbd> to customize settings</p>
+      </div>
+      <button class="welcome-close" id="welcome-close">Got it</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Pi Dashboard</h1>
+            <div class="hostname-row">
+              <span class="hostname" id="hostname">Loading...</span>
+              <div class="status-indicator">
+                <span class="pulse"></span>
+                <span class="status-text">Live</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn" id="refresh-btn" title="Refresh now (R)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              <polyline points="21 3 21 9 15 9"/>
+            </svg>
+            <span class="shortcut-hint">R</span>
+          </button>
+          <button class="action-btn" id="pause-btn" title="Pause updates (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pause-icon">
+              <rect x="6" y="4" width="4" height="16"/>
+              <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="play-icon" style="display:none">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span class="shortcut-hint">P</span>
+          </button>
+          <button class="action-btn" id="fullscreen-btn" title="Fullscreen (F)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fullscreen-expand">
+              <polyline points="15 3 21 3 21 9"/>
+              <polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="fullscreen-collapse" style="display:none">
+              <polyline points="4 14 10 14 10 20"/>
+              <polyline points="20 10 14 10 14 4"/>
+              <line x1="14" y1="10" x2="21" y2="3"/>
+              <line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+            <span class="shortcut-hint">F</span>
+          </button>
+          <button class="action-btn" id="compact-btn" title="Compact Mode (K)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+            </svg>
+            <span class="shortcut-hint">K</span>
+          </button>
+          <button class="action-btn" id="sound-btn" title="Toggle Sound (M)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sound-on">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sound-off" style="display:none">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+            <span class="shortcut-hint">M</span>
+          </button>
+          <button class="action-btn" id="api-btn" title="API (A)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/>
+              <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>
+            </svg>
+            <span class="shortcut-hint">A</span>
+          </button>
+          <button class="action-btn" id="settings-btn" title="Settings (S)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="shortcut-hint">S</span>
+          </button>
+          <button class="action-btn" id="sysinfo-btn" title="System Info (I)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2"/>
+              <rect x="9" y="9" width="6" height="6"/>
+              <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+            </svg>
+            <span class="shortcut-hint">I</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="stats-grid">
+        <!-- CPU Card -->
+        <div class="card cpu-card">
+          <div class="card-header">
+            <div class="card-icon cpu-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <rect x="9" y="9" width="6" height="6"/>
+                <line x1="9" y1="1" x2="9" y2="4"/>
+                <line x1="15" y1="1" x2="15" y2="4"/>
+                <line x1="9" y1="20" x2="9" y2="23"/>
+                <line x1="15" y1="20" x2="15" y2="23"/>
+                <line x1="20" y1="9" x2="23" y2="9"/>
+                <line x1="20" y1="14" x2="23" y2="14"/>
+                <line x1="1" y1="9" x2="4" y2="9"/>
+                <line x1="1" y1="14" x2="4" y2="14"/>
+              </svg>
+            </div>
+            <span class="card-title">CPU Usage</span>
+          </div>
+          <div class="card-body">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle class="gauge-fill cpu-gauge" cx="60" cy="60" r="50" id="cpu-gauge"/>
+              </svg>
+              <div class="gauge-value">
+                <span class="value" id="cpu-value">0</span>
+                <span class="unit">%</span>
+              </div>
+            </div>
+            <div class="cpu-speed" id="cpu-speed">-- GHz</div>
+            <div class="cores-grid" id="cores-grid"></div>
+            <div class="sparkline-container">
+              <canvas class="sparkline-canvas" id="cpu-sparkline" width="400" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memory Card -->
+        <div class="card memory-card">
+          <div class="card-header">
+            <div class="card-icon memory-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                <line x1="6" y1="10" x2="6" y2="14"/>
+                <line x1="10" y1="10" x2="10" y2="14"/>
+                <line x1="14" y1="10" x2="14" y2="14"/>
+                <line x1="18" y1="10" x2="18" y2="14"/>
+              </svg>
+            </div>
+            <span class="card-title">Memory</span>
+          </div>
+          <div class="card-body">
+            <div class="gauge-container">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle class="gauge-fill memory-gauge" cx="60" cy="60" r="50" id="memory-gauge"/>
+              </svg>
+              <div class="gauge-value">
+                <span class="value" id="memory-value">0</span>
+                <span class="unit">%</span>
+              </div>
+            </div>
+            <div class="memory-summary" id="memory-summary">0 / 0 GB</div>
+            <div class="memory-bar-container">
+              <div class="memory-bar">
+                <div class="memory-bar-used" id="memory-bar-used"></div>
+                <div class="memory-bar-cache" id="memory-bar-cache"></div>
+              </div>
+              <div class="memory-bar-legend">
+                <div class="legend-item">
+                  <span class="legend-color used"></span>
+                  <span class="legend-label">Used</span>
+                  <span class="legend-value" id="memory-used">0 GB</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color cache"></span>
+                  <span class="legend-label">Cache</span>
+                  <span class="legend-value" id="memory-cache">0 GB</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color free"></span>
+                  <span class="legend-label">Free</span>
+                  <span class="legend-value" id="memory-free">0 GB</span>
+                </div>
+              </div>
+            </div>
+            <div class="sparkline-container">
+              <canvas class="sparkline-canvas" id="memory-sparkline" width="400" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Temperature Card -->
+        <div class="card temp-card">
+          <div class="card-header">
+            <div class="card-icon temp-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+              </svg>
+            </div>
+            <span class="card-title">Temperature</span>
+          </div>
+          <div class="card-body temp-body">
+            <div class="temp-display">
+              <span class="temp-value" id="temp-value">0</span>
+              <span class="temp-unit">°C</span>
+            </div>
+            <div class="temp-bar-container">
+              <div class="temp-bar" id="temp-bar"></div>
+              <div class="temp-scale">
+                <span>0°</span>
+                <span>50°</span>
+                <span>85°</span>
+              </div>
+            </div>
+            <div class="temp-status" id="temp-status">Normal</div>
+            <div class="temp-minmax">
+              <div class="temp-min">
+                <span class="temp-minmax-label">↓ Min</span>
+                <span class="temp-minmax-value" id="temp-min">--</span>
+              </div>
+              <div class="temp-max">
+                <span class="temp-minmax-label">↑ Max</span>
+                <span class="temp-minmax-value" id="temp-max">--</span>
+              </div>
+            </div>
+            <div class="temp-throttle" id="temp-throttle">
+              <span class="throttle-icon">✓</span>
+              <span class="throttle-text">No throttling</span>
+            </div>
+            <div class="sparkline-container">
+              <canvas class="sparkline-canvas" id="temp-sparkline" width="400" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uptime Card -->
+        <div class="card uptime-card">
+          <div class="card-header">
+            <div class="card-icon uptime-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <span class="card-title">Uptime & Load</span>
+          </div>
+          <div class="card-body uptime-body">
+            <div class="uptime-section">
+              <div class="section-label">Uptime</div>
+              <div class="uptime-display" id="uptime-display">
+                <div class="uptime-segment">
+                  <span class="uptime-value" id="uptime-days">0</span>
+                  <span class="uptime-label">days</span>
+                </div>
+                <div class="uptime-segment">
+                  <span class="uptime-value" id="uptime-hours">0</span>
+                  <span class="uptime-label">hrs</span>
+                </div>
+                <div class="uptime-segment">
+                  <span class="uptime-value" id="uptime-mins">0</span>
+                  <span class="uptime-label">min</span>
+                </div>
+              </div>
+            </div>
+            <div class="load-section">
+              <div class="section-label">Load Average</div>
+              <div class="load-display">
+                <div class="load-segment">
+                  <span class="load-value" id="load-1">0.00</span>
+                  <span class="load-label">1 min</span>
+                </div>
+                <div class="load-segment">
+                  <span class="load-value" id="load-5">0.00</span>
+                  <span class="load-label">5 min</span>
+                </div>
+                <div class="load-segment">
+                  <span class="load-value" id="load-15">0.00</span>
+                  <span class="load-label">15 min</span>
+                </div>
+              </div>
+            </div>
+            <div class="boot-section">
+              <div class="section-label">Last Boot</div>
+              <div class="boot-display">
+                <span class="boot-value" id="boot-time">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Services Section -->
+      <section class="services-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon services-icon">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Services
+          <button class="section-edit-btn" id="services-edit-btn" title="Edit Services">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        </h2>
+        <div class="services-grid" id="services-grid">
+          <div class="no-services">Checking services...</div>
+        </div>
+      </section>
+
+      <!-- Docker Containers Section -->
+      <section class="containers-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          Containers
+          <span class="container-count" id="container-count">0 running</span>
+        </h2>
+        <div class="containers-grid" id="containers-grid">
+          <div class="no-containers">No containers detected</div>
+        </div>
+      </section>
+
+      <!-- WireGuard Section (hidden by default) -->
+      <section class="wireguard-section" id="wireguard-section" style="display: none;">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon wireguard-icon">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          WireGuard Clients
+          <span class="wireguard-count" id="wireguard-count">0 online</span>
+        </h2>
+        <div class="wireguard-grid" id="wireguard-grid">
+          <div class="no-wireguard">Loading WireGuard clients...</div>
+        </div>
+      </section>
+
+      <!-- Network Section -->
+      <section class="network-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon network-icon">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <circle cx="12" cy="20" r="1"/>
+          </svg>
+          Network
+        </h2>
+        <div class="network-grid" id="network-grid">
+          <div class="no-network">Loading network info...</div>
+        </div>
+      </section>
+
+      <!-- Processes Section -->
+      <section class="processes-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon processes-icon">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Top Processes
+        </h2>
+        <div class="processes-table" id="processes-table">
+          <div class="process-header">
+            <span class="process-name">Process</span>
+            <span class="process-cmd">Command</span>
+            <span class="process-cpu">CPU</span>
+            <span class="process-mem">Memory</span>
+            <span class="process-time">Time</span>
+            <span class="process-pid">PID</span>
+          </div>
+          <div class="processes-list" id="processes-list">
+            <div class="no-processes">Loading processes...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Disk Usage Section -->
+      <section class="disk-section">
+        <h2 class="section-title">Storage</h2>
+        <div class="disks-grid" id="disks-grid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="system-info">
+        <span id="os-info">Loading...</span>
+        <span class="separator">•</span>
+        <span id="arch-info">-</span>
+      </div>
+      <div class="update-info">
+        <span class="update-label">Last update:</span>
+        <span id="last-update" class="update-time">-</span>
+        <span id="last-update-ago" class="update-ago"></span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Chart Modal -->
+  <div class="chart-modal" id="chart-modal">
+    <div class="chart-modal-content">
+      <div class="chart-modal-header">
+        <h3 id="chart-modal-title">CPU History</h3>
+        <button class="chart-modal-close" id="chart-modal-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="chart-modal-body">
+        <canvas class="large-chart" id="large-chart" width="600" height="200"></canvas>
+        <div class="chart-stats">
+          <div class="chart-stat">
+            <span class="chart-stat-label">Current</span>
+            <span class="chart-stat-value" id="chart-current">0%</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Average</span>
+            <span class="chart-stat-value" id="chart-avg">0%</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Max</span>
+            <span class="chart-stat-value" id="chart-max">0%</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Min</span>
+            <span class="chart-stat-value" id="chart-min">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Info Panel -->
+  <div class="sysinfo-overlay" id="sysinfo-overlay">
+    <div class="sysinfo-panel">
+      <div class="sysinfo-header">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+            <rect x="9" y="9" width="6" height="6"/>
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+          </svg>
+          System Information
+        </h2>
+        <button class="sysinfo-close" id="sysinfo-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="sysinfo-body" id="sysinfo-body">
+        <div class="sysinfo-loading">Loading system information...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="settings-overlay" id="settings-overlay">
+    <div class="settings-panel">
+      <div class="settings-header">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Settings
+        </h2>
+        <button class="settings-close" id="settings-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-section">
+          <h3>Color Theme</h3>
+          <div class="theme-selector" id="theme-selector">
+            <button class="theme-option" data-theme="default" title="Cyan & Purple">
+              <span class="theme-swatch" style="background: linear-gradient(135deg, #00d4ff, #a855f7)"></span>
+            </button>
+            <button class="theme-option" data-theme="emerald" title="Emerald & Cyan">
+              <span class="theme-swatch" style="background: linear-gradient(135deg, #10b981, #06b6d4)"></span>
+            </button>
+            <button class="theme-option" data-theme="rose" title="Rose & Pink">
+              <span class="theme-swatch" style="background: linear-gradient(135deg, #f43f5e, #ec4899)"></span>
+            </button>
+            <button class="theme-option" data-theme="amber" title="Amber & Red">
+              <span class="theme-swatch" style="background: linear-gradient(135deg, #f59e0b, #ef4444)"></span>
+            </button>
+            <button class="theme-option" data-theme="indigo" title="Indigo & Violet">
+              <span class="theme-swatch" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Refresh Interval</h3>
+          <div class="setting-row">
+            <label for="setting-interval">Update every:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-interval" min="1" max="10" value="2" step="1">
+              <span class="setting-value" id="interval-value">2s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>CPU Thresholds</h3>
+          <div class="setting-row">
+            <label for="setting-cpu-warning">Warning:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-cpu-warning" min="50" max="95" value="70" step="5">
+              <span class="setting-value" id="cpu-warning-value">70%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-cpu-critical">Critical:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-cpu-critical" min="60" max="100" value="90" step="5">
+              <span class="setting-value" id="cpu-critical-value">90%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Memory Thresholds</h3>
+          <div class="setting-row">
+            <label for="setting-mem-warning">Warning:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-mem-warning" min="50" max="95" value="80" step="5">
+              <span class="setting-value" id="mem-warning-value">80%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-mem-critical">Critical:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-mem-critical" min="60" max="100" value="95" step="5">
+              <span class="setting-value" id="mem-critical-value">95%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>CPU</h3>
+          <div class="setting-row">
+            <label for="setting-overclock-base">Overclock base frequency:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-overclock-base" min="1.0" max="3.0" value="2.4" step="0.1">
+              <span class="setting-value" id="overclock-base-value">2.4 GHz</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Temperature Thresholds</h3>
+          <div class="setting-row">
+            <label for="setting-temp-warning">Warning:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-temp-warning" min="50" max="80" value="70" step="5">
+              <span class="setting-value" id="temp-warning-value">70°C</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="setting-temp-critical">Critical:</label>
+            <div class="setting-control">
+              <input type="range" id="setting-temp-critical" min="60" max="90" value="80" step="5">
+              <span class="setting-value" id="temp-critical-value">80°C</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>WireGuard VPN</h3>
+          <div class="setting-row">
+            <label for="setting-wireguard-enabled">Show WireGuard clients:</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="setting-wireguard-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row" id="wireguard-interface-row" style="display: none;">
+            <label for="setting-wireguard-interface">Interface:</label>
+            <input type="text" id="setting-wireguard-interface" value="wg0" class="setting-input" placeholder="wg0">
+          </div>
+        </div>
+
+              </div>
+      <div class="settings-footer">
+        <button class="settings-btn-secondary" id="settings-reset">Reset to Defaults</button>
+        <button class="settings-btn-primary" id="settings-save">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Modal -->
+  <div class="api-overlay" id="api-overlay">
+    <div class="api-panel">
+      <div class="api-header">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/>
+            <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>
+          </svg>
+          API Access
+        </h2>
+        <button class="api-close" id="api-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="api-body">
+        <div class="api-section">
+          <h3>Download Current Data</h3>
+          <p class="api-desc">Export all system metrics as JSON file</p>
+          <button class="api-download-btn" id="api-download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download JSON
+          </button>
+        </div>
+
+        <div class="api-section">
+          <h3>External API Access</h3>
+          <p class="api-desc">Allow external applications to fetch system data</p>
+          
+          <div class="api-row">
+            <label>Enable API:</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="api-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="api-key-section" id="api-key-section">
+            <div class="api-row">
+              <label>API Key:</label>
+              <div class="api-key-field">
+                <input type="text" id="api-key-display" readonly placeholder="No key generated">
+                <button class="api-icon-btn" id="api-key-generate" title="Generate new key">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                    <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                </button>
+                <button class="api-icon-btn" id="api-key-copy" title="Copy to clipboard">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="api-endpoint">
+              <label>Endpoint:</label>
+              <code id="api-endpoint-url">/api/v1/system</code>
+              <button class="api-icon-btn" id="api-endpoint-copy" title="Copy full URL">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="api-usage">
+              <span class="api-usage-label">Usage:</span>
+              <code>curl -H "X-API-Key: YOUR_KEY" <span id="api-curl-url"></span></code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services Config Panel -->
+  <div class="services-config-overlay" id="services-config-overlay">
+    <div class="services-config-panel">
+      <div class="services-config-header">
+        <h2>Configure Services</h2>
+        <button class="services-config-close" id="services-config-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="services-config-body" id="services-config-body">
+        <div class="services-config-section">
+          <div class="services-section-header">Monitored Services</div>
+          <div class="services-config-list" id="services-config-list">
+            <!-- Configured services will be rendered here -->
+          </div>
+        </div>
+        <div class="services-config-section">
+          <div class="services-section-header">
+            <span>Available Services</span>
+            <span class="services-discovered-count" id="services-discovered-count"></span>
+          </div>
+          <div class="services-discovered-list" id="services-discovered-list">
+            <!-- Discovered services will be rendered here -->
+          </div>
+        </div>
+      </div>
+      <div class="services-config-footer">
+        <button class="services-config-btn-secondary" id="services-config-cancel">Cancel</button>
+        <button class="services-config-btn-primary" id="services-config-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

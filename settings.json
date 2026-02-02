@@ -1,0 +1,59 @@
+{
+  "wireguard": {
+    "enabled": false,
+    "interface": "wg0"
+  },
+  "dashboard": {
+    "theme": "default",
+    "interval": 1,
+    "sound": true,
+    "compact": false,
+    "overclockBase": 2.4,
+    "thresholds": {
+      "cpu": {
+        "warning": 70,
+        "critical": 90
+      },
+      "memory": {
+        "warning": 80,
+        "critical": 95
+      },
+      "temperature": {
+        "warning": 65,
+        "critical": 80
+      }
+    }
+  },
+  "services": [
+    {
+      "name": "Pi Dashboard",
+      "port": 3001,
+      "path": "/api/health",
+      "checkType": "http",
+      "icon": "activity",
+      "enabled": true
+    },
+    {
+      "name": "HTTP",
+      "port": 80,
+      "path": "/",
+      "checkType": "http",
+      "icon": "globe",
+      "enabled": true
+    },
+    {
+      "name": "SSH",
+      "port": 22,
+      "checkType": "tcp",
+      "icon": "terminal",
+      "enabled": true
+    },
+    {
+      "name": "SMTP",
+      "port": 25,
+      "checkType": "tcp",
+      "icon": "mail",
+      "enabled": true
+    }
+  ]
+}
