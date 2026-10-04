@@ -1,50 +1,40 @@
-# Pi Dashboard - ARM64 compatible (multi-stage build)
-FROM node:22-alpine AS builder
+# Pi Dashboard: multi-arch image (linux/arm64, linux/amd64)
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
 
-COPY server/ ./server/
 COPY src/ ./src/
 COPY vite.config.js ./
-
 RUN npm run build
 
-# Production stage
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Install dependencies for systeminformation, network stats, and WireGuard
-RUN apk add --no-cache procps util-linux iproute2 wireguard-tools
+# ss for service discovery, wg for WireGuard peers. vcgencmd (throttling details) only
+# exists for ARM and only works when /dev/vcio is passed to the container.
+RUN apk add --no-cache iproute2-ss wireguard-tools-wg \
+ && (apk add --no-cache raspberrypi-utils-vcgencmd || true)
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server ./server
-
-# Copy default settings config
+COPY server/ ./server/
 COPY settings.json ./settings.json
 
-# ===================
-# Environment Variables (easily configurable)
-# ===================
-
-# Server port
-ENV PORT=3001
-
-# Admin token for protected endpoints (set in production!)
-ENV ADMIN_TOKEN=
-
-# CORS allowed origins (comma-separated, use * for all)
-ENV CORS_ORIGINS=*
-
-# Path to settings config file
-ENV SETTINGS_CONFIG=/app/settings.json
+ENV NODE_ENV=production \
+    PORT=3001 \
+    ADMIN_TOKEN= \
+    CORS_ORIGINS=* \
+    SETTINGS_CONFIG=/app/settings.json
 
 EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -q --spider "http://127.0.0.1:${PORT}/api/health" || exit 1
 
 CMD ["node", "server/index.js"]

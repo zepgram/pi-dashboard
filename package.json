@@ -1,17 +1,37 @@
 {
   "name": "pi-dashboard",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Real-time Raspberry Pi monitoring dashboard with a REST API and a built-in MCP server",
   "type": "module",
+  "license": "MIT",
+  "author": "Benjamin Calef",
+  "homepage": "https://github.com/zepgram/pi-dashboard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zepgram/pi-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zepgram/pi-dashboard/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "node server/index.js & vite --host",
+    "dev": "node --watch server/index.js & vite --host",
     "server": "node server/index.js",
-    "build": "vite build"
+    "start": "node server/index.js",
+    "build": "vite build",
+    "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "express": "^5.2.1",
-    "systeminformation": "^5.30.5"
+    "systeminformation": "^5.30.5",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "vite": "^7.3.1"
   }
 }

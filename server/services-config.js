@@ -1,5 +1,4 @@
-// Known services by port with check type and icon
-// Shared between index.js and stats.js
+// Known services by port with check type and icon.
 
 export const KNOWN_SERVICES = {
   21:    { name: 'FTP', icon: 'folder', checkType: 'tcp' },
@@ -11,7 +10,7 @@ export const KNOWN_SERVICES = {
   110:   { name: 'POP3', icon: 'mail', checkType: 'tcp' },
   111:   { name: 'RPC', icon: 'cpu', checkType: 'tcp' },
   143:   { name: 'IMAP', icon: 'mail', checkType: 'tcp' },
-  443:   { name: 'HTTPS', icon: 'lock', checkType: 'http', path: '/' },
+  443:   { name: 'HTTPS', icon: 'lock', checkType: 'https', path: '/' },
   500:   { name: 'IKEv2/IPSec', icon: 'shield', checkType: 'interface', interface: 'ipsec0' },
   631:   { name: 'CUPS', icon: 'printer', checkType: 'http', path: '/' },
   1194:  { name: 'OpenVPN', icon: 'shield', checkType: 'interface', interface: 'tun0' },
@@ -35,7 +34,7 @@ export const KNOWN_SERVICES = {
   8112:  { name: 'Deluge', icon: 'download', checkType: 'http', path: '/' },
   8123:  { name: 'Home Assistant', icon: 'home', checkType: 'http', path: '/' },
   8384:  { name: 'Syncthing', icon: 'refresh-cw', checkType: 'http', path: '/' },
-  8443:  { name: 'HTTPS Alt', icon: 'lock', checkType: 'http', path: '/' },
+  8443:  { name: 'HTTPS Alt', icon: 'lock', checkType: 'https', path: '/' },
   8686:  { name: 'Lidarr', icon: 'music', checkType: 'http', path: '/' },
   8787:  { name: 'Readarr', icon: 'book', checkType: 'http', path: '/' },
   8989:  { name: 'Sonarr', icon: 'tv', checkType: 'http', path: '/' },
@@ -67,6 +66,8 @@ export const KNOWN_PROCESSES = {
   'grafana': { name: 'Grafana', icon: 'bar-chart', checkType: 'http', path: '/api/health' },
   'prometheus': { name: 'Prometheus', icon: 'bar-chart', checkType: 'http', path: '/-/healthy' },
   'node': { name: 'Node.js', icon: 'hexagon', checkType: 'http', path: '/' },
+  // Recent Node.js names its main thread, and that is what `ss` reports.
+  'MainThread': { name: 'Node.js', icon: 'hexagon', checkType: 'http', path: '/' },
   'java': { name: 'Java App', icon: 'coffee', checkType: 'http', path: '/' },
   'python': { name: 'Python App', icon: 'code', checkType: 'http', path: '/' },
   'deluged': { name: 'Deluge', icon: 'download', checkType: 'http', path: '/' },
@@ -84,7 +85,10 @@ export const KNOWN_PROCESSES = {
   'unbound': { name: 'Unbound DNS', icon: 'globe', checkType: 'dns' },
 };
 
-export const VALID_CHECK_TYPES = ['http', 'tcp', 'redis', 'dns', 'interface'];
+export const VALID_CHECK_TYPES = ['http', 'https', 'tcp', 'redis', 'dns', 'interface'];
+
+/** Linux interface names: at most 15 chars, no path separators. */
+export const IFACE_NAME = /^(?!\.{1,2}$)[a-zA-Z0-9_.-]{1,15}$/;
 
 // Infer checkType from port if not explicitly set
 export function inferCheckType(port, explicitCheckType) {
