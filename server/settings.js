@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
       cpu: { warning: 70, critical: 90 },
       memory: { warning: 80, critical: 95 },
       temperature: { warning: 65, critical: 80 },
+      disk: { warning: 80, critical: 95 },
     },
   },
   api: { enabled: false, keyHash: null },

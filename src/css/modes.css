@@ -1,0 +1,129 @@
+/* Compact: same content, tighter. */
+body.compact {
+  --gap: 8px;
+  --pad: 11px;
+  --fs-value: 30px;
+  --chart-h: 60px;
+  --row-h: 25px;
+  --strip-h: 44px;
+  --fs-body: 12.5px;
+}
+body.compact .panel { gap: 8px; }
+body.compact .metric-main { min-height: 46px; }
+body.compact .readout { display: none; }
+body.compact .uptime .num { font-size: 24px; }
+body.compact .net-rate .num { font-size: 20px; }
+body.compact .svc { padding: 6px 9px; }
+body.compact .services { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+body.compact .disks { gap: 10px; }
+body.compact .seg-bar { height: 10px; margin: 4px 0; }
+body.compact .table { font-size: 12px; }
+body.compact .strip { padding-block: 5px; }
+body.compact .health { height: 28px; }
+body.compact .foot { padding-bottom: 10px; }
+
+/* Ultra: kiosk on a small screen. Headline numbers, lamps and little else. */
+body.ultra {
+  --gap: 5px;
+  --pad: 8px;
+  --fs-value: 24px;
+  --chart-h: 36px;
+  --row-h: 21px;
+  --strip-h: 36px;
+  --fs-body: 12px;
+  --fs-label: 9.5px;
+  background-image: none;
+}
+body.ultra .panel { gap: 6px; }
+body.ultra .panel-head { min-height: 16px; }
+body.ultra .tag { height: 16px; padding: 0 5px; font-size: 9.5px; }
+body.ultra .metric-main { min-height: 0; align-items: center; }
+body.ultra .value .unit { font-size: 11px; }
+body.ultra .readout,
+body.ultra .legend,
+body.ultra .kv,
+body.ultra .core-val,
+body.ultra .chart-sm,
+body.ultra .disk-foot,
+body.ultra .svc-port,
+body.ultra .col-image,
+body.ultra .col-up,
+body.ultra .col-cmd,
+body.ultra .col-time,
+body.ultra .col-pid,
+body.ultra .col-total,
+body.ultra .col-endpoint,
+body.ultra .brand-name,
+body.ultra .foot,
+body.ultra .hint,
+body.ultra #btn-services-edit,
+body.ultra .chip {
+  display: none;
+}
+body.ultra .core { grid-template-columns: auto 1fr; gap: 5px; font-size: 9.5px; }
+body.ultra .cores { gap: 4px 10px; max-width: 200px; }
+body.ultra .throttle { font-size: 11px; }
+body.ultra .net-table th:nth-child(1) { width: 16%; }
+body.ultra .net-table th:nth-child(2) { width: 34%; }
+body.ultra .uptime .num { font-size: 20px; }
+body.ultra .uptime .unit { font-size: 11px; }
+body.ultra .loads { flex-direction: row; flex-wrap: wrap; gap: 2px 10px; }
+body.ultra .load { grid-template-columns: auto auto; gap: 5px; }
+body.ultra .load .bar { display: none; }
+body.ultra .load .num { font-size: 12px; }
+body.ultra .net-main { gap: 18px; }
+body.ultra .net-rate { flex-direction: row; align-items: baseline; gap: 6px; }
+body.ultra .net-rate .num { font-size: 15px; }
+body.ultra .disks { gap: 6px; }
+body.ultra .disk-pct { font-size: 13px; }
+body.ultra .disk-mount { font-size: 11.5px; }
+body.ultra .seg-bar { height: 6px; margin: 3px 0 0; }
+body.ultra .services { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+body.ultra .svc { grid-template-rows: auto; grid-template-columns: auto minmax(0, 1fr); padding: 4px 7px; gap: 6px; }
+body.ultra .svc .lamp { grid-row: auto; }
+body.ultra .svc-name { font-size: 11.5px; }
+body.ultra .svc-lat { display: none; }
+body.ultra .svc[data-state='offline'] .svc-name,
+body.ultra .svc[data-state='error'] .svc-name { color: var(--crit); }
+body.ultra .table { font-size: 11.5px; }
+body.ultra .table th { height: 20px; font-size: 9px; }
+body.ultra .table td.mono, body.ultra .meter .mono { font-size: 11px; }
+body.ultra .meter .bar { display: none; }
+body.ultra .containers-table th:nth-child(1) { width: 40%; }
+body.ultra .containers-table th:nth-child(3) { width: 20%; }
+body.ultra .containers-table th:nth-child(4), body.ultra .containers-table th:nth-child(5) { width: 20%; }
+body.ultra .processes-table th:nth-child(1) { width: auto; }
+body.ultra .processes-table th:nth-child(3) { width: 64px; }
+body.ultra .strip { gap: 10px; padding-block: 3px; }
+body.ultra .health { height: 24px; padding: 0 8px; }
+body.ultra .health-detail { font-size: 11.5px; }
+body.ultra .icon-btn { width: 26px; height: 26px; }
+body.ultra .icon-btn svg { width: 14px; height: 14px; }
+body.ultra .actions-sep { margin: 0 3px; }
+body.ultra .modal .icon-btn { width: 32px; height: 32px; }
+
+/* Ultra packs the four headline metrics on one row whenever there is room. */
+@media (min-width: 700px) {
+  body.ultra .grid { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: dense; }
+  body.ultra #card-cpu, body.ultra #card-memory, body.ultra #card-temp, body.ultra #card-load { grid-column: span 3; }
+  body.ultra #card-network { grid-column: span 5; }
+  body.ultra #card-disks { grid-column: span 3; }
+  body.ultra #card-services { grid-column: span 4; }
+  body.ultra #card-containers { grid-column: span 7; }
+  body.ultra #card-processes { grid-column: span 5; }
+  body.ultra #card-wireguard { grid-column: span 5; }
+  body.ultra .mem-break { max-width: 120px; }
+  body.ultra .temp-side { align-items: flex-end; }
+}
+@media (min-width: 700px) and (max-width: 1199px) {
+  body.ultra .throttle[data-level='ok'], body.ultra .cores { display: none; }
+  body.ultra #card-containers { grid-row: auto; }
+}
+@media (max-width: 699px) {
+  body.ultra .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 5px; }
+  body.ultra .grid > .panel { grid-column: span 2 !important; }
+  body.ultra .grid > #card-cpu, body.ultra .grid > #card-memory,
+  body.ultra .grid > #card-temp, body.ultra .grid > #card-load { grid-column: span 1 !important; }
+  body.ultra .cores, body.ultra .mem-break, body.ultra .temp-side, body.ultra .load .k { display: none; }
+  body.ultra .strip { padding-inline: 6px; }
+}

@@ -29,7 +29,6 @@ COPY settings.json ./settings.json
 
 ENV NODE_ENV=production \
     PORT=3001 \
-    ADMIN_TOKEN= \
     CORS_ORIGINS=* \
     SETTINGS_CONFIG=/app/settings.json
 

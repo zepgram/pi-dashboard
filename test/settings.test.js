@@ -75,6 +75,7 @@ test('store: a 1.0 settings file keeps every key it had', async () => {
   assert.equal(loaded.dashboard.overclockBase, 2.8);
   assert.deepEqual(loaded.dashboard.thresholds.cpu, { warning: 50, critical: 60 });
   assert.deepEqual(loaded.dashboard.thresholds.memory, { warning: 80, critical: 95 });
+  assert.deepEqual(loaded.dashboard.thresholds.disk, { warning: 80, critical: 95 });
   assert.deepEqual(loaded.security, { enabled: true });
   assert.equal(loaded.api.keyHash, 'abc');
 

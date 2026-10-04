@@ -43,7 +43,9 @@ export function parseMeminfo(text) {
     total,
     used,
     buffcache,
+    // `free` has always carried the available memory; kept for 1.x clients.
     free: available,
+    available,
     percent: pct(used),
     usedPercent: pct(used),
     buffcachePercent: pct(buffcache),

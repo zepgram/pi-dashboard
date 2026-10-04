@@ -21,7 +21,7 @@ test('meminfo: used is total minus available, cache is reported apart', () => {
 });
 
 test('meminfo: empty input does not divide by zero', () => {
-  assert.deepEqual(parseMeminfo(''), { total: 0, used: 0, buffcache: 0, free: 0, percent: 0, usedPercent: 0, buffcachePercent: 0 });
+  assert.deepEqual(parseMeminfo(''), { total: 0, used: 0, buffcache: 0, free: 0, available: 0, percent: 0, usedPercent: 0, buffcachePercent: 0 });
 });
 
 test('throttle word: live bits throttle, history bits only explain', () => {

@@ -1,382 +1,297 @@
-# Pi Dashboard 🖥️
+# Pi Dashboard
 
-A beautiful, real-time monitoring dashboard for Raspberry Pi home servers.
+Real-time monitoring dashboard for a Raspberry Pi home server (or any Linux box): one
+container, no database, a REST API and a built-in MCP server.
 
-<img width="100%" height="auto" alt="Capture d’écran 2026-01-25 à 23 39 53" src="https://github.com/user-attachments/assets/e2e60248-bbde-43f4-b090-5a6bc7b981c3" />
+<img width="100%" alt="Pi Dashboard" src="docs/screenshot.png" />
 
-![Modern 2026 Design](https://img.shields.io/badge/design-modern%202026-blueviolet)
 ![Raspberry Pi](https://img.shields.io/badge/platform-Raspberry%20Pi-c51a4a)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![CI](https://github.com/zepgram/pi-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/zepgram/pi-dashboard/actions/workflows/ci.yml)
 [![Docker Hub](https://img.shields.io/docker/v/usernamedigital/pi-dashboard?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/usernamedigital/pi-dashboard)
 [![Docker Pulls](https://img.shields.io/docker/pulls/usernamedigital/pi-dashboard)](https://hub.docker.com/r/usernamedigital/pi-dashboard)
 
-## ✨ Features
+## Features
 
-- **Real-time monitoring** — CPU, RAM, temperature, disk usage
-- **Temperature insights** — Min/max session tracking, throttling status (via vcgencmd)
-- **Docker integration** — Container stats with CPU/memory usage
-- **WireGuard VPN** — Monitor connected clients, transfer stats, last seen
-- **Network stats** — Bandwidth, connections per interface
-- **Service health** — HTTP, TCP, Redis, DNS health checks
-- **External API** — REST API with key authentication for external apps
-- **Modern UI** — Glassmorphism, smooth animations, dark theme
-- **Display modes** — Normal, Compact, and Ultra-compact layouts
-- **Multiple themes** — 5 color themes (cyan, emerald, rose, amber, indigo)
-- **Persistent settings** — Server-side config, shared across devices
-- **PWA ready** — Install on mobile, works offline
+- **Live metrics**: CPU (per core, frequency, overclock), memory, temperature, load,
+  disks, network rates, top processes.
+- **History**: the last hour and the last 24 hours of CPU, memory, temperature, load and
+  network, kept in memory and carried across restarts.
+- **Raspberry Pi specifics**: under-voltage and throttling status, session min/max
+  temperature.
+- **Docker**: every container with state, health, CPU and memory, without enabling the
+  memory cgroup.
+- **Service health**: HTTP, HTTPS, TCP, Redis, DNS and network-interface checks, with
+  auto-discovery of what listens on the host.
+- **WireGuard**: connected clients, last handshake, transfer.
+- **Alerts**: configurable warning and critical thresholds, toast and optional sound.
+- **REST API** protected by an API key, and an **MCP server** so an AI assistant can read
+  the state of the machine.
+- **Interface**: three densities (normal, compact, ultra for kiosks), five colour themes,
+  keyboard shortcuts, installable on a phone. No external request: it works on a network
+  without Internet access.
+- Settings are stored server-side and shared by every device.
 
-## 🎨 Design
+## Quick start (Docker)
 
-Silicon/AI aesthetic inspired by Apple System Preferences meets Vercel Dashboard:
-- Deep dark theme (#0a0a0a)
-- Glassmorphism cards
-- Cyan/purple accent gradients
-- Smooth micro-interactions
-- Responsive card-based layout
-- Multiple color themes
-
-## 🚀 Quick Start
+The image is built for `linux/arm64` and `linux/amd64`.
 
 ```bash
-# Clone
-git clone https://github.com/zepgram/pi-dashboard.git
-cd pi-dashboard
-
-# Install
-npm install
-
-# Run (dev)
-npm run dev
-```
-
-Dashboard available at `http://localhost:5173`
-
-## 🐳 Docker
-
-### Quick Start (Docker Hub)
-
-The easiest way — use the pre-built multi-arch image (supports amd64 and arm64):
-
-```bash
-# Create a directory for your config
 mkdir -p pi-dashboard/data && cd pi-dashboard
-
-# Download docker-compose.yml
 curl -O https://raw.githubusercontent.com/zepgram/pi-dashboard/main/docker-compose.yml
-
-# Start
 docker compose up -d
 ```
 
-Dashboard available at `http://your-pi-ip:3001`
-
-### Quick Start (Build from source)
-
-```bash
-# Clone
-git clone https://github.com/zepgram/pi-dashboard.git
-cd pi-dashboard
-
-# Create data directory
-mkdir -p data
-
-# Build and start
-docker compose up -d --build
-```
-
-### docker-compose.yml
+The dashboard is at `http://your-pi-ip:3001`.
 
 ```yaml
 services:
   pi-dashboard:
     image: usernamedigital/pi-dashboard:latest
-    # Or build locally:
-    # build: .
     container_name: pi-dashboard
     restart: unless-stopped
-
     environment:
       - PORT=3001
-      - ADMIN_TOKEN=           # Optional: protect config endpoints
-      - CORS_ORIGINS=*         # Or specific origins
-
+      - SETTINGS_CONFIG=/app/data/settings.json
+      - ADMIN_TOKEN=           # optional: protects configuration changes
+      - CORS_ORIGINS=*
     volumes:
-      # Persistent settings (dashboard config, services, API keys)
-      - ./data:/app/data
-
-      # System monitoring (required)
-      - /proc:/host/proc:ro
+      - ./data:/app/data                               # settings, API key hash, history
+      - /proc:/host/proc:ro                            # host metrics
       - /sys:/host/sys:ro
-      - /:/host/root:ro
-
-      # Docker container monitoring
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-
-      # WireGuard monitoring (optional)
-      - /etc/wireguard:/etc/wireguard:ro
-
-    # Required for full system access
+      - /:/host/root:ro                                # disks, OS release, pending updates
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # containers
+      - /etc/wireguard:/etc/wireguard:ro               # WireGuard client names (optional)
     pid: host
     network_mode: host
-
-    # Required for WireGuard monitoring
     cap_add:
-      - NET_ADMIN
-
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      - NET_ADMIN                                      # `wg show` (optional)
+    # devices:
+    #   - /dev/vcio:/dev/vcio                          # full throttling status (optional, Pi only)
 ```
 
-### Available Tags
+| Setting | Why |
+|---------|-----|
+| `pid: host` | host processes and per-container memory |
+| `network_mode: host` | host interfaces and service checks on `localhost` |
+| `/proc`, `/sys`, `/` read-only | CPU, memory, temperature, cgroups, disk usage, OS information |
+| `/var/run/docker.sock` | container list and state |
+| `./data` | settings, API key hash and history survive restarts and upgrades |
+| `/dev/vcio` | lets `vcgencmd` report frequency capping and thermal throttling; without it only live under-voltage is detected |
 
-| Tag | Description |
-|-----|-------------|
-| `latest` | Latest stable release from main branch |
-| `1.0.0` | Specific version (semver) |
-| `1.0` | Latest patch for minor version |
-| `1` | Latest minor for major version |
-| `<sha>` | Specific commit (7 chars) |
+### Tags
 
-### Key Points
+| Tag | Content |
+|-----|---------|
+| `latest` | latest release |
+| `2.0.0`, `2.0`, `2` | a release, its minor line, its major line |
 
-| Setting | Purpose |
-|---------|---------|
-| `pid: host` | Access host processes (top processes, accurate CPU stats) |
-| `network_mode: host` | Access host network interfaces, no port mapping needed |
-| `/proc:/host/proc:ro` | Read host CPU, memory, process info |
-| `/sys:/host/sys:ro` | Read host temperature, disk info, cgroups |
-| `/:/host/root:ro` | Read host disk usage, OS info |
-| `/var/run/docker.sock` | Monitor Docker containers |
-| `/etc/wireguard:ro` | Read WireGuard client configs (optional) |
-| `cap_add: NET_ADMIN` | Required for `wg show` command |
-| `./data:/app/data` | Persist settings & API keys across restarts |
+### Upgrading from 1.x
 
-### Manual Docker Run
+Pull and restart: `docker compose pull && docker compose up -d`. The compose file, the
+environment variables, `settings.json` and the API are unchanged. See
+[CHANGELOG.md](CHANGELOG.md) for what is new and what was fixed.
+
+### URL parameters
+
+Handy for a kiosk or a wall display; they apply to that browser only.
+
+| Parameter | Values |
+|-----------|--------|
+| `mode` | `normal`, `compact`, `ultra` |
+| `theme` | `default`, `emerald`, `rose`, `amber`, `indigo` |
+| `modal` | `settings`, `api`, `sysinfo`, `services`, `help`, `chart` |
+| `chart`, `range` | with `modal=chart`: `cpu`, `memory`, `temperature`, `network`, `load` and `live`, `1h`, `24h` |
+
+Example: `http://your-pi:3001/?mode=ultra&theme=emerald`. Press `?` in the dashboard for the
+keyboard shortcuts.
+
+## Running from source
+
+Requires Node.js 22 or newer.
 
 ```bash
-# Using Docker Hub image
-docker run -d --name pi-dashboard \
-  --pid=host \
-  --network=host \
-  --cap-add=NET_ADMIN \
-  -v $(pwd)/data:/app/data \
-  -v /proc:/host/proc:ro \
-  -v /sys:/host/sys:ro \
-  -v /:/host/root:ro \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -v /etc/wireguard:/etc/wireguard:ro \
-  usernamedigital/pi-dashboard:latest
-
-# Or build locally
-docker build -t pi-dashboard .
-docker run -d --name pi-dashboard \
-  --pid=host \
-  --network=host \
-  --cap-add=NET_ADMIN \
-  -v $(pwd)/data:/app/data \
-  -v /proc:/host/proc:ro \
-  -v /sys:/host/sys:ro \
-  -v /:/host/root:ro \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -v /etc/wireguard:/etc/wireguard:ro \
-  pi-dashboard
+git clone https://github.com/zepgram/pi-dashboard.git
+cd pi-dashboard
+npm install
+npm run dev        # API on :3001, Vite dev server on :5173
 ```
 
-## 📁 Structure
-
-```
-├── server/
-│   ├── index.js      # Express API
-│   └── stats.js      # System stats collector
-├── src/
-│   ├── index.html
-│   ├── main.js
-│   └── style.css
-├── data/
-│   └── settings.json # Persistent config (mount as volume)
-├── Dockerfile
-├── package.json
-└── vite.config.js
+```bash
+npm test           # unit and API tests
+npm run build      # production frontend in dist/
+npm start          # serves the API and dist/ on :3001
+docker compose up -d --build   # build the image locally (uncomment `build: .`)
 ```
 
-## ⚙️ Configuration
+## Configuration
 
-All settings are stored in `settings.json` — both dashboard preferences and services:
+Everything lives in `settings.json` (`SETTINGS_CONFIG`). It is written by the interface and
+can be edited by hand; changes are picked up without a restart.
 
 ```json
 {
   "dashboard": {
     "theme": "default",
-    "interval": 2,
+    "interval": 1,
     "sound": true,
-    "compact": false,
     "thresholds": {
       "cpu": { "warning": 70, "critical": 90 },
       "memory": { "warning": 80, "critical": 95 },
-      "temperature": { "warning": 65, "critical": 80 }
+      "temperature": { "warning": 65, "critical": 80 },
+      "disk": { "warning": 80, "critical": 95 }
     }
   },
-  "api": {
-    "enabled": false,
-    "keyHash": null
-  },
+  "api": { "enabled": false, "keyHash": null },
+  "wireguard": { "enabled": false, "interface": "wg0" },
   "services": [
-    {
-      "name": "Pi-hole Admin",
-      "port": 80,
-      "path": "/admin/",
-      "host": "localhost",
-      "checkType": "http",
-      "icon": "shield",
-      "enabled": true
-    },
-    {
-      "name": "Nextcloud",
-      "port": 8080,
-      "path": "/",
-      "checkType": "http",
-      "icon": "cloud",
-      "enabled": true
-    }
+    { "name": "Pi-hole", "port": 80, "path": "/admin/", "host": "localhost", "checkType": "http", "icon": "shield", "enabled": true }
   ]
 }
 ```
 
-### Dashboard Settings
+| Service field | Description | Default |
+|---------------|-------------|---------|
+| `name` | display name | required |
+| `port` | port to check | required |
+| `checkType` | `http`, `https`, `tcp`, `redis`, `dns` or `interface` | inferred from the port |
+| `path` | path requested by HTTP checks | `/` |
+| `host` | host to check | `localhost` |
+| `interface` | interface name for `interface` checks (`wg0`, `tun0`...) | from the port |
+| `enabled` | checked and shown | `true` |
 
-| Field | Description | Default |
-|-------|-------------|---------|
-| `theme` | Color theme (default, emerald, rose, amber, indigo) | `default` |
-| `interval` | Refresh interval in seconds | `2` |
-| `sound` | Enable alert sounds | `true` |
-| `compact` | Compact display mode | `false` |
-| `thresholds` | Warning/critical thresholds | see above |
+An HTTP check is `online` for any answer below 500 (a login page or a 403 means the service
+is up). TLS certificates are not verified.
 
-### Service Fields
-
-| Field | Description | Default |
-|-------|-------------|---------|
-| `name` | Display name | required |
-| `port` | Service port | required |
-| `path` | Health check path | `/` |
-| `host` | Hostname | `localhost` |
-| `enabled` | Show in dashboard | `true` |
-
-## 🔧 API Endpoints
-
-### Internal API (dashboard)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/stats` | GET | CPU, RAM, temp, containers, disks |
-| `/api/settings` | GET | Dashboard settings |
-| `/api/settings` | PUT | Update dashboard settings |
-| `/api/settings/api` | GET | API access settings |
-| `/api/settings/api` | PUT | Enable/disable API, generate key |
-| `/api/services` | GET | Service health status |
-| `/api/services/config` | GET | Get all services config |
-| `/api/services/config` | PUT | Update all services |
-| `/api/services/config` | POST | Add a service |
-| `/api/services/config/:index` | DELETE | Remove a service |
-| `/api/services/discover` | GET | Auto-discover services on listening ports |
-| `/api/sysinfo` | GET | System information |
-| `/api/health` | GET | Dashboard health check |
-| `/api/wireguard` | GET | WireGuard clients status |
-| `/api/settings/wireguard` | GET | WireGuard settings (enabled, interface) |
-| `/api/settings/wireguard` | PUT | Update WireGuard settings |
-
-### External API (v1)
-
-Public API for external applications, protected by API key.
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/system` | GET | Complete system data (stats + sysinfo + wireguard if enabled) |
-
-**Authentication:** Enable API access and generate a key via the dashboard UI (API button in header).
-
-```bash
-# Using header
-curl -H "X-API-Key: YOUR_KEY" http://your-pi:3001/api/v1/system
-
-# Using query param
-curl "http://your-pi:3001/api/v1/system?key=YOUR_KEY"
-```
-
-**Response includes:**
-- `system` — manufacturer, model, serial
-- `cpu` — usage, cores, speed, brand
-- `memory` — total, used, free, percent, type (e.g., LPDDR4X)
-- `temperature` — main, max, throttled (bitmask from vcgencmd)
-- `load` — uptime, loadAvg [1m, 5m, 15m]
-- `os` — distro, version, kernel, hostname, arch
-- `disks` — mount points with size/used/available
-- `network` — interfaces (IP, type) + stats (rx/tx bytes/sec)
-- `containers` — Docker containers with CPU/memory stats
-- `processes` — Top 10 processes by CPU usage
-- `baseboard` — hardware info
-- `services` — configured services with health status (online/offline, latency)
-- `wireguard` — (if enabled) interface name + clients array with name, publicKey, endpoint, lastHandshake, transfer, online status
-
-**Security:** API keys are hashed (SHA256) before storage. The plain key is shown only once at generation — copy it immediately or regenerate.
-
-## 🔐 Security
-
-Configure via `docker-compose.yml` or environment variables:
+### Environment variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ADMIN_TOKEN` | Auth token for config endpoints | _(empty = no auth)_ |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) | `*` |
-| `PORT` | Server port | `3001` |
+| `PORT` | listening port | `3001` |
+| `SETTINGS_CONFIG` | path of the settings file | `./settings.json` |
+| `ADMIN_TOKEN` | when set, every configuration change needs the `X-Admin-Token` header | _(empty: no auth)_ |
+| `CORS_ORIGINS` | allowed origins, comma-separated | `*` in the image |
 
-When `ADMIN_TOKEN` is set, config write operations require the header:
+Without `ADMIN_TOKEN`, anyone who can reach the port can change the settings. That is fine
+on a home network; set a token, or put a reverse proxy with authentication in front, before
+exposing the dashboard anywhere else.
+
+## API
+
+### Dashboard API
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/stats` | GET | current metrics: CPU, memory, temperature, load, disks, containers, network, processes |
+| `/api/history?range=1h\|24h` | GET | metric history (see below) |
+| `/api/sysinfo` | GET | hardware and OS identity |
+| `/api/services` | GET | health of the enabled services |
+| `/api/services/config` | GET, PUT, POST | read, replace, add services |
+| `/api/services/config/:index` | DELETE | remove a service |
+| `/api/services/discover` | GET | services found listening on the host |
+| `/api/settings` | GET, PUT | dashboard preferences |
+| `/api/settings/api` | GET, PUT | external API switch and key |
+| `/api/settings/wireguard` | GET, PUT | WireGuard monitoring |
+| `/api/wireguard` | GET | WireGuard clients |
+| `/api/health` | GET | liveness and version |
+
+`PUT`, `POST` and `DELETE` need `X-Admin-Token` when `ADMIN_TOKEN` is set.
+
+History format: `step` seconds between points (5 for `1h`, 60 for `24h`), point `i` is at
+`from + i * step * 1000` (milliseconds), `null` where nothing was recorded.
+
+```json
+{
+  "range": "1h",
+  "step": 5,
+  "from": 1791130290000,
+  "to": 1791133885000,
+  "series": { "cpu": [12.4, null], "memory": [], "temperature": [], "load": [], "rx": [], "tx": [] }
+}
 ```
-X-Admin-Token: your-secret-token-here
+
+`cpu` and `memory` are percentages, `temperature` is in °C, `load` is the 1-minute load
+average, `rx` and `tx` are bytes per second over the physical interfaces.
+
+### External API (v1)
+
+For other applications. Enable it and generate a key from the interface (API button).
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/system` | everything at once: metrics, hardware, services, WireGuard when enabled |
+| `GET /api/v1/history?range=1h\|24h` | metric history |
+
+```bash
+curl -H "X-API-Key: YOUR_KEY" http://your-pi:3001/api/v1/system
+curl -H "Authorization: Bearer YOUR_KEY" http://your-pi:3001/api/v1/system
+curl "http://your-pi:3001/api/v1/system?key=YOUR_KEY"
 ```
 
-**Security features:**
-- Input validation & sanitization
-- XSS protection
-- Rate limiting (100 req/min on config endpoints)
-- CORS origin restrictions
-- Payload size limits
+Only a SHA-256 hash of the key is stored: the key is displayed once, when generated.
 
-## 📋 Requirements
+## MCP server
 
-- Node.js 22+
-- Raspberry Pi (ARM64) or any Linux server
-- Docker (optional, for container monitoring)
+The dashboard speaks the [Model Context Protocol](https://modelcontextprotocol.io) on
+`/mcp` (Streamable HTTP), so an assistant such as Claude can answer "is my Pi healthy?",
+"what is using the CPU?" or "did the temperature spike last night?" from live data.
 
-### 💡 Raspberry Pi: Container Stats
+It is controlled by the same switch and the same key as the external API, and it is
+**read-only**: no tool changes anything on the machine.
 
-Pi Dashboard reads container CPU from cgroups v2 (`/sys/fs/cgroup/.../cpu.stat`) and memory from `/proc/[PID]/status`. Works **without** enabling the memory cgroup controller — no kernel modifications needed!
+```bash
+claude mcp add --transport http pi-dashboard http://your-pi:3001/mcp \
+  --header "Authorization: Bearer YOUR_KEY"
+```
 
-CPU usage is normalized to 100% (total CPU capacity), not per-core.
+For other clients:
 
-## 🎯 Roadmap
+```json
+{
+  "mcpServers": {
+    "pi-dashboard": {
+      "type": "http",
+      "url": "http://your-pi:3001/mcp",
+      "headers": { "Authorization": "Bearer YOUR_KEY" }
+    }
+  }
+}
+```
 
-- [x] Persistent server-side settings
-- [x] Container CPU/memory stats
-- [x] Smooth animations
-- [x] Auto-discover services
-- [x] External REST API with key auth
-- [x] Multiple color themes
-- [x] Mobile-friendly UI
-- [x] WireGuard VPN monitoring
-- [x] Temperature min/max + throttling status
-- [x] Display modes (normal/compact/ultra)
-- [ ] Historical charts (last hour/day)
-- [ ] Log viewer
-- [ ] Multi-server support
+| Tool | Returns |
+|------|---------|
+| `get_system_overview` | CPU, memory, temperature and throttling, load, uptime, disks, network, container and service counts, alerts currently raised |
+| `list_containers` | containers with state, health, CPU and memory (filter by state, sort) |
+| `get_services_status` | status and latency of every configured health check |
+| `get_top_processes` | processes using the most CPU right now |
+| `get_history` | min, average, max and a downsampled series of one metric over 1 h or 24 h |
+| `get_wireguard_clients` | WireGuard peers, when monitoring is enabled |
+| `get_system_info` | board, CPU, memory, OS and kernel |
 
-## 📄 License
+The endpoint is plain HTTP, like the dashboard. To reach it from outside your network, put
+it behind a reverse proxy with TLS.
 
-MIT — do whatever you want with it.
+## Notes for Raspberry Pi
 
----
+- Container memory is computed from the processes of each container, so it works on a
+  stock Raspberry Pi OS where the memory cgroup controller is disabled. Container CPU is
+  normalised: 100 % means every core is busy.
+- Pending package updates are read with the host's `apt`, from the read-only host root.
+- Top processes show the CPU share over the last sample (100 % = one core), like `top`.
 
-Built with ☕ on a Raspberry Pi 5
+## Project layout
+
+```
+server/            Express API
+  collector/       sampling loop: host metrics, disks, Docker, processes
+  history.js       1 h and 24 h ring buffers
+  mcp.js           MCP tools
+  checks.js        service health checks
+  settings.js      settings store and validation
+src/               frontend (vanilla JS modules, built with Vite)
+test/              node:test suites
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
