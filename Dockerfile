@@ -1,14 +1,16 @@
 # Pi Dashboard: multi-arch image (linux/arm64, linux/amd64)
-FROM node:24-alpine AS builder
+
+# Everything here is plain JavaScript, so it is built once on the build machine
+# and copied into each target image instead of being rebuilt under emulation.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS builder
 
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm ci
-
 COPY src/ ./src/
 COPY vite.config.js ./
 RUN npm run build
+RUN npm ci --omit=dev && npm cache clean --force
 
 FROM node:24-alpine
 
@@ -20,8 +22,7 @@ RUN apk add --no-cache iproute2-ss wireguard-tools-wg \
  && (apk add --no-cache raspberrypi-utils-vcgencmd || true)
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
-
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY server/ ./server/
 COPY settings.json ./settings.json

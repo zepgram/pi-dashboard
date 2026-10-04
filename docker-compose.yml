@@ -41,6 +41,11 @@ services:
       # WireGuard config (for client names mapping)
       - /etc/wireguard:/etc/wireguard:ro
 
+    # Optional, Raspberry Pi only: full throttling details (frequency capping, thermal
+    # throttling, past events). Without it only live under-voltage is reported.
+    # devices:
+    #   - /dev/vcio:/dev/vcio
+
     # Host namespaces for full system access
     pid: host
     network_mode: host
